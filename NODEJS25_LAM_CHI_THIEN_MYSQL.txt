@@ -1,0 +1,178 @@
+--Bài Tập
+DROP DATABASE db_btMysql;
+CREATE DATABASE db_btMysql;
+USE db_btMysql;
+
+DROP TABLE users
+CREATE TABLE users 
+(
+ user_id INT PRIMARY KEY AUTO_INCREMENT,
+ full_name VARCHAR(255),
+ email VARCHAR(255),
+ password VARCHAR(255)
+)
+INSERT INTO users (full_name,email,password)
+VALUES
+("Lâm Chí Thiện","Thien123@gmail.com","1234"),
+("Lâm Hoàng Phúc","Phuc123@gmail.com","1234"),
+("Lâm Chí Chiêu","Chieu123@gmail.com","1234"),
+("Nguyễn Thị Thanh Xuân","Xuan123@gmail.com","1234"),
+("Nguyễn Xuân Cường","Cuong123@gmail.com","1234"),
+("Đỗ Thành Công","Cong123@gmail.com","1234"),
+("Nguyễn Văn A","A123@gmail.com","1234");
+
+DROP TABLE restaurant
+CREATE TABLE restaurant 
+(
+ res_id INT PRIMARY KEY AUTO_INCREMENT,
+ res_name VARCHAR(255),
+ image VARCHAR(255),
+ descr VARCHAR(255)
+)
+INSERT INTO restaurant (res_name,image,descr)
+VALUES
+("res1","img1","des1"),
+("res2","img2","des2"),
+("res3","img3","des3");
+
+DROP TABLE rate_res
+CREATE TABLE rate_res
+(
+ user_id INT,
+ res_id INT,
+ amount INT,
+ date_rate DATETIME,
+ FOREIGN KEY (user_id) REFERENCES users(user_id),
+ FOREIGN KEY (res_id) REFERENCES restaurant(res_id)
+)
+INSERT INTO rate_res (user_id,res_id,amount,date_rate)
+VALUES
+(1,1,10,"2022-10-09 12:00:00"),
+(2,2,15,"2022-10-09 12:00:00"),
+(3,1,18,"2022-10-09 12:00:00"),
+(5,2,5,"2022-10-09 12:00:00"),
+(6,2,12,"2022-10-09 12:00:00"),
+(5,3,12,"2022-10-09 12:00:00");
+
+DROP TABLE like_res
+CREATE TABLE like_res
+(
+ user_id INT,
+ res_id INT,
+ date_like DATETIME,
+ FOREIGN KEY (user_id) REFERENCES users(user_id),
+ FOREIGN KEY (res_id) REFERENCES restaurant(res_id)
+)
+INSERT INTO like_res (user_id,res_id,date_like)
+VALUES
+(1,1,"2022-10-09 12:00:00"),
+(2,2,"2022-10-09 12:00:00"),
+(3,1,"2022-10-09 12:00:00"),
+(2,2,"2022-10-09 12:00:00"),
+(3,1,"2022-10-09 12:00:00"),
+(4,1,"2022-10-09 12:00:00"),
+(5,2,"2022-10-09 12:00:00"),
+(4,1,"2022-10-09 12:00:00"),
+(5,2,"2022-10-09 12:00:00"),
+(1,1,"2022-10-09 12:00:00");
+
+DROP TABLE food_type
+CREATE TABLE food_type
+(
+ type_id INT PRIMARY KEY AUTO_INCREMENT,
+ type_name VARCHAR(255)
+)
+INSERT INTO food_type (type_name)
+VALUES
+("food"),
+("drink");
+
+DROP TABLE food
+CREATE TABLE food
+(
+ food_id INT PRIMARY KEY AUTO_INCREMENT,
+ food_name VARCHAR(255),
+ image VARCHAR(255),
+ price FLOAT,
+ descr VARCHAR(255),
+ type_id INT
+)
+INSERT INTO food (food_name,image,price,descr,type_id)
+VALUES
+("Hamburger","awds",50000,"ngon",1),
+("Sandwich","awdss",40000,"ngon",1),
+("Coca","awdsss",10000,"ngon",2);
+
+DROP TABLE orders
+CREATE TABLE orders
+(
+ user_id INT ,
+ food_id INT,
+ amount INT,
+ code VARCHAR(255),
+ arr_sub_id VARCHAR(255),
+ FOREIGN KEY (user_id) REFERENCES users(user_id),
+ FOREIGN KEY (food_id) REFERENCES food(food_id)
+)
+INSERT INTO orders (user_id,food_id,amount,code,arr_sub_id)
+VALUES
+(1,1,100,"abc","abc12"),
+(2,2,200,"abc","abc12"),
+(2,1,100,"abc","abc12"),
+(3,1,100,"abc","abc12");
+
+DROP TABLE sub_food
+CREATE TABLE sub_food
+(
+ sub_id INT PRIMARY KEY AUTO_INCREMENT,
+ sub_name VARCHAR(255),
+ sub_price FLOAT,
+ food_id INT,
+ FOREIGN KEY (food_id) REFERENCES food(food_id)
+)
+INSERT INTO sub_food (sub_name,sub_price,food_id)
+VALUES
+("th",10000,1),
+("qw",12000,2),
+("er",10000,3),
+("zxc",15000,1),
+("awe",16000,2),
+("thq",17000,3);
+--Bài 1 Tìm 5 người đã like nhà hàng nhiều nhất
+SELECT users.user_id,users.full_name,COUNT(like_res.date_like) AS so_lan_like
+FROM users INNER JOIN like_res
+ON users.user_id=like_res.user_id
+GROUP BY users.user_id
+ORDER BY so_lan_like DESC
+LIMIT 5;
+--Bài 2 Tìm 2 nhà hàng có lượt like nhiều nhất
+SELECT restaurant.res_id,restaurant.res_name,COUNT(like_res.date_like) as tong_like
+FROM restaurant INNER JOIN like_res
+ON restaurant.res_id=like_res.res_id
+GROUP BY restaurant.res_id
+ORDER BY tong_like DESC
+LIMIT 2;
+--Bài 3 Tìm người đã đặt hàng nhiều nhất
+SELECT users.user_id,users.full_name,SUM(orders.amount) AS don_dat_hang
+FROM users INNER JOIN orders
+ON users.user_id=orders.user_id
+GROUP BY users.user_id
+ORDER BY don_dat_hang DESC
+LIMIT 1;
+--Bài 4 Tìm người dùng không hoạt động trong hệ thống (không đặt hàng, không like, không đánh giá nhà hàng)
+
+SELECT users.user_id,users.full_name
+FROM users 
+LEFT JOIN orders
+ON users.user_id=orders.user_id
+LEFT JOIN like_res
+ON users.user_id=like_res.user_id
+LEFT JOIN rate_res
+ON users.user_id=rate_res.user_id
+WHERE orders.amount IS NULL AND like_res.date_like IS NULL AND rate_res.amount IS NULL;
+
+--Bài 5 Tính trung bình sub_food của một food
+SELECT food.food_id,food.food_name,AVG(sub_food.sub_price) AS Trung_Binh_SubFood
+FROM food INNER JOIN sub_food
+ON food.food_id=sub_food.food_id
+GROUP BY food.food_id;
